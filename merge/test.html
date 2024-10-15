@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chunk File Upload</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="upload-container">
+        <h2>Upload File in Chunks</h2>
+        <form id="fileUploadForm">
+            <input type="file" id="fileInput" />
+            <button type="button" class="upload-btn" onclick="uploadFile()">Upload</button>
+        </form>
+
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <span id="progressText" class="progress-text">0%</span>
+        </div>
+
+        <div id="uploadStatus" class="upload-status"></div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
