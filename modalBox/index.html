@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donut Info Modal with Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            position: relative;
+        }
+        #map {
+            height: 400px; /* Set a height for the map */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 300px;
+            overflow: auto;
+            overflow-x:none
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+            max-height: 80%; /* Limit height of modal */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .filter-input {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+        }
+        .info-item {
+            cursor: pointer;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .details {
+            display: none; /* Initially hidden */
+            margin-top: 10px;
+            padding: 10px;
+            background: #e9e9e9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex-direction: column;
+        }
+        .switch-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000; /* Ensure it is above the map */
+        }
+        .switch {
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            position: relative;
+            cursor: pointer;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .expand-collapse-icon {
+            margin-left: 10px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="switch-container">
+    <label class="switch">
+        <input type="checkbox" id="toggleModal" checked> <!-- Check this by default -->
+        <span class="slider"></span>
+    </label>
+</div>
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeModal">&times;</span>
+        <h3>Donut Details</h3>
+        <input type="text" id="filter" class="filter-input" placeholder="Filter by Name, ID, Type...">
+        <div id="infoContainer"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const data = [
+        { "id": "0001", "type": "donut", "name": "Cake", "ppu": 0.55, "batters": "none", "mmsi": 4, "topping": "none" },
+        { "id": "0002", "type": "donut", "name": "Raised", "ppu": 0.55, "batters": "none", "mmsi": 4, "topping": "none" },
+        { "id": "0003", "type": "donut", "name": "Old Fashioned", "ppu": 0.55, "batters": "none", "mmsi": 4, "topping": "none" },
+        // Add more data as needed...
+    ];
+
+    const infoContainer = document.getElementById('infoContainer');
+    const filterInput = document.getElementById('filter');
+    const modal = document.getElementById('myModal');
+    const closeModal = document.getElementById('closeModal');
+    const toggleModal = document.getElementById('toggleModal');
+
+    function generateInfoItems() {
+        // Clear previous items
+        infoContainer.innerHTML = '';
+
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'info-item';
+            div.innerHTML = `
+                ${item.name} (ID: ${item.id})
+                <span class="expand-collapse-icon">▼</span>
+            `;
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'details';
+            detailsDiv.innerHTML = `
+                <p><strong>ID:</strong> ${item.id}</p>
+                <p><strong>Name:</strong> ${item.name}</p>
+                <p><strong>Type:</strong> ${item.type}</p>
+                <p><strong>Price Per Unit:</strong> ${item.ppu}</p>
+                <p><strong>Batters:</strong> ${item.batters}</p>
+                <p><strong>MMSI:</strong> ${item.mmsi}</p>
+                <p><strong>Topping:</strong> ${item.topping}</p>
+            `;
+
+            // Click event to toggle details and icon on the whole info-item
+            div.addEventListener('click', (e) => {
+                const isExpanded = e.currentTarget.querySelector('.expand-collapse-icon').innerText === '▲';
+                detailsDiv.style.display = isExpanded ? 'none' : 'block';
+                e.currentTarget.querySelector('.expand-collapse-icon').innerText = isExpanded ? '▼' : '▲';
+            });
+
+            infoContainer.appendChild(div);
+            infoContainer.appendChild(detailsDiv);
+        });
+    }
+
+    // Close modal when close button is clicked
+    closeModal.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Filter items based on input
+    filterInput.addEventListener('input', function() {
+        const filterValue = this.value.toLowerCase();
+        const items = document.querySelectorAll('.info-item');
+        items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(filterValue) ? 'block' : 'none';
+        });
+    });
+
+    // Show/Hide the modal based on the switch button
+    toggleModal.addEventListener('change', function() {
+        if (this.checked) {
+            modal.style.display = 'block';
+            generateInfoItems(); // Populate items on toggle
+        } else {
+            modal.style.display = 'none';
+            infoContainer.innerHTML = ''; // Clear info items when modal is closed
+        }
+    });
+
+    // Initialize Leaflet Map
+    const map = L.map('map').setView([51.505, -0.09], 13); // Example coordinates
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Show modal on load with all items listed
+    generateInfoItems(); // Generate items initially
+    modal.style.display = 'block'; // Open modal by default
+</script>
+
+</body>
+</html>
+
