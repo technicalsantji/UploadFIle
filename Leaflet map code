@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Moving Position with Progressive Path Color Update</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // Create the map and set initial view
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+        }).addTo(map);
+
+        // Add a marker for the initial position
+        var currentPosition = L.marker([51.505, -0.09]).addTo(map);
+
+        // Path coordinates
+        var pathCoordinates = [
+            [51.505, -0.09],
+            [51.51, -0.1],
+            [51.52, -0.11],
+            [51.53, -0.12],
+            [51.54, -0.13],
+            [51.55, -0.14]
+        ];
+
+        // Draw the initial path with a neutral color
+        var pathSegments = [];
+        for (let i = 0; i < pathCoordinates.length - 1; i++) {
+            var segment = L.polyline([pathCoordinates[i], pathCoordinates[i + 1]], { color: 'gray' }).addTo(map);
+            pathSegments.push(segment);
+        }
+
+        // Function to smoothly move the marker between two coordinates
+        function moveMarkerSmoothly(from, to, duration, segmentIndex) {
+            var startTime = performance.now();
+
+            function animate(time) {
+                var progress = (time - startTime) / duration;
+                if (progress > 1) progress = 1;
+
+                var lat = from[0] + (to[0] - from[0]) * progress;
+                var lng = from[1] + (to[1] - from[1]) * progress;
+
+                currentPosition.setLatLng([lat, lng]);
+                map.setView([lat, lng]);
+
+                // Update the path segment color progressively
+                if (progress === 1) {
+                    pathSegments[segmentIndex].setStyle({ color: 'red' });
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Move the marker to each point in sequence and progressively color the path
+        let currentIndex = 0;
+        function moveToNextPoint() {
+            if (currentIndex < pathCoordinates.length - 1) {
+                var from = pathCoordinates[currentIndex];
+                var to = pathCoordinates[currentIndex + 1];
+                moveMarkerSmoothly(from, to, 2000, currentIndex); // Move over 2 seconds
+
+                currentIndex++;
+                setTimeout(moveToNextPoint, 2000); // Move to the next point after the duration
+            } else {
+                currentIndex = 0; // Reset to loop through the path again
+                // Optionally reset the path colors to gray if needed
+                // pathSegments.forEach(segment => segment.setStyle({ color: 'gray' }));
+                setTimeout(moveToNextPoint, 2000);
+            }
+        }
+
+        moveToNextPoint(); // Start moving the marker
+    </script>
+</body>
+</html>
