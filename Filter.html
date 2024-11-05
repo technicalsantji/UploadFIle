@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ship Details - Filter, Search, and Sort Table with Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input {
+      margin-bottom: 15px;
+      padding: 8px;
+      font-size: 16px;
+      width: 100%;
+      max-width: 800px;
+    }
+    table {
+      width: 100%;
+      max-width: 800px;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      cursor: pointer;
+      background-color: #f2f2f2;
+      
+      align-items: center;
+      }
+    th:hover {
+      background-color: #e0e0e0;
+    }
+    .sort-icon {
+      margin-left: 8px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ship Details - Filter, Search, and Sort Table with Icons</h1>
+  
+  <!-- Search Input -->
+  <input type="text" id="searchInput" placeholder="Search by any field...">
+
+  <!-- Table Display -->
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortTable('name')">Name <span class="sort-icon" id="name-icon">▲</span></th>
+        <th onclick="sortTable('type')">Type <span class="sort-icon" id="type-icon">▲</span></th>
+        <th onclick="sortTable('flag')">Flag <span class="sort-icon" id="flag-icon">▲</span></th>
+        <th onclick="sortTable('yearBuilt')">Year Built <span class="sort-icon" id="yearBuilt-icon">▲</span></th>
+        <th onclick="sortTable('length')">Length (m) <span class="sort-icon" id="length-icon">▲</span></th>
+        <th onclick="sortTable('width')">Width (m) <span class="sort-icon" id="width-icon">▲</span></th>
+        <th onclick="sortTable('tonnage')">Tonnage (GT) <span class="sort-icon" id="tonnage-icon">▲</span></th>
+        <th onclick="sortTable('speed')">Speed (knots) <span class="sort-icon" id="speed-icon">▲</span></th>
+        <th onclick="sortTable('crew')">Crew <span class="sort-icon" id="crew-icon">▲</span></th>
+        <th onclick="sortTable('status')">Status <span class="sort-icon" id="status-icon">▲</span></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <script>
+    // Sample ship data with 10 attributes
+    const ships = [
+      { name: 'Titanic', type: 'Ocean Liner', flag: 'UK', yearBuilt: 1912, length: 269, width: 28, tonnage: 52310, speed: 23, crew: 892, status: 'Sunk' },
+      { name: 'Queen Mary 2', type: 'Cruise Ship', flag: 'UK', yearBuilt: 2004, length: 345, width: 41, tonnage: 149215, speed: 30, crew: 1253, status: 'Active' },
+      { name: 'USS Enterprise', type: 'Aircraft Carrier', flag: 'USA', yearBuilt: 1961, length: 342, width: 40, tonnage: 93400, speed: 33, crew: 4600, status: 'Retired' },
+      { name: 'Harmony of the Seas', type: 'Cruise Ship', flag: 'Bahamas', yearBuilt: 2016, length: 362, width: 47, tonnage: 226963, speed: 22, crew: 2300, status: 'Active' },
+      { name: 'Maersk Triple E', type: 'Container Ship', flag: 'Denmark', yearBuilt: 2013, length: 400, width: 59, tonnage: 165000, speed: 23, crew: 20, status: 'Active' },
+      { name: 'Cutty Sark', type: 'Clipper Ship', flag: 'UK', yearBuilt: 1869, length: 65, width: 10, tonnage: 963, speed: 17, crew: 28, status: 'Museum' },
+      { name: 'Seawise Giant', type: 'Oil Tanker', flag: 'Norway', yearBuilt: 1979, length: 458, width: 68, tonnage: 260941, speed: 16, crew: 40, status: 'Scrapped' },
+      { name: 'Bismarck', type: 'Battleship', flag: 'Germany', yearBuilt: 1939, length: 251, width: 36, tonnage: 41700, speed: 30, crew: 2100, status: 'Sunk' },
+      { name: 'USS Constitution', type: 'Frigate', flag: 'USA', yearBuilt: 1797, length: 93, width: 13, tonnage: 1575, speed: 13, crew: 450, status: 'Museum' },
+      { name: 'HMS Victory', type: 'Ship of the Line', flag: 'UK', yearBuilt: 1765, length: 69, width: 15, tonnage: 2142, speed: 11, crew: 850, status: 'Museum' },
+    ];
+
+    let currentSort = { field: 'name', order: 'asc' }; // Initial sort state
+
+    // Function to render table rows based on the filtered data
+    function renderTable(filteredData) {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = ''; // Clear existing rows
+
+      filteredData.forEach(ship => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${ship.name}</td>
+          <td>${ship.type}</td>
+          <td>${ship.flag}</td>
+          <td>${ship.yearBuilt}</td>
+          <td>${ship.length}</td>
+          <td>${ship.width}</td>
+          <td>${ship.tonnage}</td>
+          <td>${ship.speed}</td>
+          <td>${ship.crew}</td>
+          <td>${ship.status}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Initial render of all data
+    renderTable(ships);
+
+    // Event handler for search input
+    document.getElementById('searchInput').addEventListener('input', () => {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filteredData = ships.filter(ship =>
+        Object.values(ship).some(value => value.toString().toLowerCase().includes(searchTerm))
+      );
+      sortAndRender(filteredData);
+    });
+
+    // Function to handle sorting and toggle icons
+    function sortTable(field) {
+      if (currentSort.field === field) {
+        currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.field = field;
+        currentSort.order = 'asc';
+      }
+
+      // Update icon direction based on sort order
+      document.querySelectorAll('.sort-icon').forEach(icon => icon.textContent = '▲');
+      const icon = document.getElementById(`${field}-icon`);
+      icon.textContent = currentSort.order === 'asc' ? '▲' : '▼';
+
+      // Sort data and re-render table
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filteredData = ships.filter(ship =>
+        Object.values(ship).some(value => value.toString().toLowerCase().includes(searchTerm))
+      );
+      sortAndRender(filteredData);
+    }
+
+    // Function to sort and render data based on current sort state
+    function sortAndRender(dataToSort) {
+      dataToSort.sort((a, b) => {
+        if (a[currentSort.field] < b[currentSort.field]) return currentSort.order === 'asc' ? -1 : 1;
+        if (a[currentSort.field] > b[currentSort.field]) return currentSort.order === 'asc' ? 1 : -1;
+        return
+        0;
+      });
+
+      renderTable(dataToSort);
+    }
+  </script>
+</body>
+</html>
