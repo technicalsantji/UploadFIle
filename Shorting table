@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beautiful Table with Cascading Filter</title>
+    <style>
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+
+        /* Filter and Search */
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .filter-dropdown, .dynamic-filter-dropdown {
+            padding: 8px;
+            width: 150px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        /* Table Styles */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        th:hover {
+            background-color: #45a049;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .sort-icon {
+            font-size: 12px;
+            color: #fff;
+            margin-left: 5px;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .pagination button:hover {
+            background-color: #45a049;
+        }
+
+        /* Add Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .table, .pagination, .filter-container {
+            animation: fadeIn 1s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="table-title">Ship Information</h2>
+
+        <!-- Filter and Search Section -->
+        <div class="filter-container">
+            <input type="text" id="searchInput" placeholder="Search..." class="search-box">
+            <select id="filterSelect" class="filter-dropdown">
+                <option value="all">All</option>
+                <option value="name">Name</option>
+                <option value="country">Country</option>
+                <option value="mmsi">MMSI</option>
+                <option value="shiptype">Ship Type</option>
+                <option value="flag">Flag</option>
+            </select>
+
+            <!-- Dynamic Filter dropdown will appear based on selection -->
+            <select id="dynamicFilterSelect" class="dynamic-filter-dropdown">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+
+        <!-- Table -->
+        <table id="shipTable" class="table">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Name <span class="sort-icon">&#x21C5;</span></th>
+                    <th onclick="sortTable(1)">Country <span class="sort-icon">&#x21C5;</span></th>
+                    <th onclick="sortTable(2)">MMSI <span class="sort-icon">&#x21C5;</span></th>
+                    <th onclick="sortTable(3)">Ship Type <span class="sort-icon">&#x21C5;</span></th>
+                    <th onclick="sortTable(4)">Flag <span class="sort-icon">&#x21C5;</span></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Dynamic table rows will be inserted here -->
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div id="pagination" class="pagination">
+            <button onclick="prevPage()">Previous</button>
+            <button onclick="nextPage()">Next</button>
+        </div>
+    </div>
+
+    <script>
+    // Sample data for the table
+    const shipData = [
+        { name: 'Ship A', country: 'USA', mmsi: '123456789', shiptype: 'Cargo', flag: 'USA' },
+        { name: 'Ship B', country: 'UK', mmsi: '987654321', shiptype: 'Tanker', flag: 'UK' },
+        { name: 'Ship C', country: 'Germany', mmsi: '135792468', shiptype: 'Cargo', flag: 'Germany' },
+        { name: 'Ship D', country: 'France', mmsi: '246801357', shiptype: 'Cruise', flag: 'France' },
+        { name: 'Ship E', country: 'Japan', mmsi: '123987654', shiptype: 'Fishing', flag: 'Japan' },
+{ name: 'Ship A', country: 'USA', mmsi: '123456789', shiptype: 'Cargo', flag: 'USA' },
+        { name: 'Ship B', country: 'UK', mmsi: '987654321', shiptype: 'Tanker', flag: 'UK' },
+        { name: 'Ship C', country: 'Germany', mmsi: '135792468', shiptype: 'Cargo', flag: 'Germany' },
+        { name: 'Ship D', country: 'France', mmsi: '246801357', shiptype: 'Cruise', flag: 'France' },
+        { name: 'Ship E', country: 'Japan', mmsi: '123987654', shiptype: 'Fishing', flag: 'Japan' },
+{ name: 'Ship A', country: 'USA', mmsi: '123456789', shiptype: 'Cargo', flag: 'USA' },
+        { name: 'Ship B', country: 'UK', mmsi: '987654321', shiptype: 'Tanker', flag: 'UK' },
+        { name: 'Ship C', country: 'Germany', mmsi: '135792468', shiptype: 'Cargo', flag: 'Germany' },
+        { name: 'Ship D', country: 'France', mmsi: '246801357', shiptype: 'Cruise', flag: 'France' },
+        { name: 'Ship E', country: 'Japan', mmsi: '123987654', shiptype: 'Fishing', flag: 'Japan' },
+        // Add more sample data as needed
+    ];
+
+    let currentPage = 1;
+    let rowsPerPage = 5;
+
+    // Function to render the table
+    function renderTable(data) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = ''; // Clear previous rows
+
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const paginatedData = data.slice(startIndex, startIndex + rowsPerPage);
+
+        paginatedData.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.country}</td>
+                <td>${item.mmsi}</td>
+                <td>${item.shiptype}</td>
+                <td>${item.flag}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        updatePaginationButtons(data);
+    }
+
+    // Pagination controls
+    function updatePaginationButtons(data) {
+        const totalPages = Math.ceil(data.length / rowsPerPage);
+        const prevButton = document.querySelector('.pagination button:nth-child(1)');
+        const nextButton = document.querySelector('.pagination button:nth-child(2)');
+
+        prevButton.disabled = currentPage === 1;
+        nextButton.disabled = currentPage === totalPages;
+    }
+
+    function nextPage() {
+        currentPage++;
+        renderTable(filteredData);
+    }
+
+    function prevPage() {
+        currentPage--;
+        renderTable(filteredData);
+    }
+
+    // Sorting function
+    function sortTable(columnIndex) {
+        const rows = Array.from(document.querySelectorAll('#shipTable tbody tr'));
+        const sortedRows = rows.sort((a, b) => {
+            const aText = a.cells[columnIndex].textContent.trim();
+            const bText = b.cells[columnIndex].textContent.trim();
+
+            if (aText < bText) return -1;
+            if (aText > bText) return 1;
+            return 0;
+        });
+
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        sortedRows.forEach(row => tableBody.appendChild(row));
+    }
+
+    // Search and filter functionality
+    let filteredData = shipData;
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filteredData = shipData.filter(item => {
+            return Object.values(item).some(value => value.toLowerCase().includes(searchTerm));
+        });
+        renderTable(filteredData);
+    });
+
+    document.getElementById('filterSelect').addEventListener('change', function() {
+        const filterValue = this.value;
+        updateDynamicFilterOptions(filterValue);
+        applyFilters();
+    });
+
+    document.getElementById('dynamicFilterSelect').addEventListener('change', function() {
+        applyFilters();
+    });
+
+    // Function to update the dynamic filter options based on selected filter
+    function updateDynamicFilterOptions(filterValue) {
+        const dynamicFilterSelect = document.getElementById('dynamicFilterSelect');
+        dynamicFilterSelect.innerHTML = ''; // Clear previous options
+
+        // Disable the second dropdown if "All" is selected or no filter is selected
+        if (filterValue === 'all' || !filterValue) {
+            dynamicFilterSelect.style.display = 'none'; // Hide second dropdown
+            dynamicFilterSelect.disabled = true; // Disable the second dropdown
+            return;
+        }
+
+        dynamicFilterSelect.style.display = 'inline-block'; // Show second dropdown
+        dynamicFilterSelect.disabled = false; // Enable the second dropdown
+
+        // Get unique values for the selected filter
+        let uniqueValues = [...new Set(shipData.map(item => item[filterValue]))];
+
+        // Add 'All' option
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'All';
+        dynamicFilterSelect.appendChild(allOption);
+
+        // Add unique values for the selected filter
+        uniqueValues.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            dynamicFilterSelect.appendChild(option);
+        });
+    }
+
+    // Function to apply search and filter to the table
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const filterValue = document.getElementById('filterSelect').value;
+        const dynamicFilterValue = document.getElementById('dynamicFilterSelect').value;
+
+        filteredData = shipData.filter(item => {
+            // Search filter
+            const matchesSearch = Object.values(item).some(value => value.toLowerCase().includes(searchTerm));
+
+            // Dynamic filter
+            const matchesDynamicFilter = dynamicFilterValue === 'all' || item[filterValue] === dynamicFilterValue;
+
+            return matchesSearch && matchesDynamicFilter;
+        });
+
+        currentPage = 1;  // Reset to the first page when filters are applied
+        renderTable(filteredData);
+    }
+
+    // Initial render
+    renderTable(filteredData);
+</script>
+      
