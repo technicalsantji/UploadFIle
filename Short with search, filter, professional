@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table with Multi-Select Search and Sorting</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        #searchInput {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .multi-select-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .multi-select {
+            display: none;
+            position: absolute;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 200px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .multi-select input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .multi-select input[type="text"] {
+            margin-bottom: 10px;
+            padding: 5px;
+            width: calc(100% - 10px);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .multi-select label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .multi-select-container button {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .multi-select-container button:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="searchInput" placeholder="Search in table...">
+
+    <select id="filterSelect">
+        <option value="all">Select Filter</option>
+        <option value="name">Name</option>
+        <option value="country">Country</option>
+        <option value="shiptype">Ship Type</option>
+        <option value="flag">Flag</option>
+    </select>
+
+    <div class="multi-select-container">
+        <button id="multiSelectButton">Select Filter Values</button>
+        <div class="multi-select" id="dynamicFilterMultiSelect">
+            <input type="text" id="multiSelectSearch" placeholder="Search options...">
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Name</th>
+                <th onclick="sortTable(1)">Country</th>
+                <th onclick="sortTable(2)">MMSI</th>
+                <th onclick="sortTable(3)">Ship Type</th>
+                <th onclick="sortTable(4)">Flag</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="pagination">
+        <button onclick="prevPage()">Previous</button>
+        <button onclick="nextPage()">Next</button>
+    </div>
+
+    <script>
+        const shipData = [
+            { name: 'Ship A', country: 'USA', mmsi: '123456789', shiptype: 'Cargo', flag: 'USA' },
+            { name: 'Ship B', country: 'UK', mmsi: '987654321', shiptype: 'Tanker', flag: 'UK' },
+            { name: 'Ship C', country: 'Germany', mmsi: '135792468', shiptype: 'Cargo', flag: 'Germany' },
+            { name: 'Ship D', country: 'France', mmsi: '246801357', shiptype: 'Cruise', flag: 'France' },
+            { name: 'Ship E', country: 'Japan', mmsi: '123987654', shiptype: 'Fishing', flag: 'Japan' }
+        ];
+
+        let currentPage = 1;
+        let rowsPerPage = 5;
+        let filteredData = shipData;
+        let selectedValues = [];
+        const sortDirections = Array(5).fill(true);
+
+        function renderTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const paginatedData = data.slice(startIndex, startIndex + rowsPerPage);
+
+            paginatedData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.country}</td>
+                    <td>${item.mmsi}</td>
+                    <td>${item.shiptype}</td>
+                    <td>${item.flag}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            updatePaginationButtons(data);
+        }
+
+        function updatePaginationButtons(data) {
+            const totalPages = Math.ceil(data.length / rowsPerPage);
+            document.querySelector('.pagination button:nth-child(1)').disabled = currentPage === 1;
+            document.querySelector('.pagination button:nth-child(2)').disabled = currentPage === totalPages;
+        }
+
+        function nextPage() {
+            if (currentPage < Math.ceil(filteredData.length / rowsPerPage)) {
+                currentPage++;
+                renderTable(filteredData);
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(filteredData);
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            filteredData = shipData.filter(item =>
+                Object.values(item).some(value => value.toLowerCase().includes(searchTerm))
+            );
+            currentPage = 1;
+            renderTable(filteredData);
+        });
+
+        document.getElementById('filterSelect').addEventListener('change', function () {
+            const filterValue = this.value;
+            updateMultiSelectOptions(filterValue);
+        });
+
+        document.getElementById('multiSelectButton').addEventListener('click', function () {
+            const multiSelect = document.getElementById('dynamicFilterMultiSelect');
+            multiSelect.style.display = multiSelect.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('multiSelectSearch').addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            const labels = document.querySelectorAll('#dynamicFilterMultiSelect label');
+            labels.forEach(label => {
+                const text = label.textContent.toLowerCase();
+                label.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        function updateMultiSelectOptions(filterValue) {
+            const multiSelect = document.getElementById('dynamicFilterMultiSelect');
+            multiSelect.innerHTML = '<input type="text" id="multiSelectSearch" placeholder="Search options...">';
+            document.getElementById('multiSelectSearch').addEventListener('input', function () {
+                const searchTerm = this.value.toLowerCase();
+                const labels = document.querySelectorAll('#dynamicFilterMultiSelect label');
+                labels.forEach(label => {
+                    const text = label.textContent.toLowerCase();
+                    label.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+            });
+
+            if (filterValue === 'all') {
+                filteredData = shipData;
+                renderTable(filteredData);
+                return;
+            }
+
+            const uniqueValues = [...new Set(shipData.map(item => item[filterValue]))];
+
+            uniqueValues.forEach(value => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = value;
+                checkbox.addEventListener('change', handleMultiSelectChange);
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(value));
+                multiSelect.appendChild(label);
+            });
+        }
+
+        function handleMultiSelectChange() {
+            const checkboxes = document.querySelectorAll('#dynamicFilterMultiSelect input[type="checkbox"]');
+            selectedValues = Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const filterField = document.getElementById('filterSelect').value;
+            if (selectedValues.length === 0 || filterField=== 'all') {
+                filteredData = shipData;
+            } else {
+                filteredData = shipData.filter(item => selectedValues.includes(item[filterField]));
+            }
+            currentPage = 1; // Reset to the first page after filtering
+            renderTable(filteredData);
+        }
+
+        function sortTable(columnIndex) {
+            const fieldNames = ['name', 'country', 'mmsi', 'shiptype', 'flag'];
+            const sortField = fieldNames[columnIndex];
+            const ascending = sortDirections[columnIndex];
+
+            filteredData.sort((a, b) => {
+                if (a[sortField] < b[sortField]) return ascending ? -1 : 1;
+                if (a[sortField] > b[sortField]) return ascending ? 1 : -1;
+                return 0;
+            });
+
+            sortDirections[columnIndex] = !ascending; // Toggle sort direction
+            renderTable(filteredData);
+        }
+
+        // Initial render
+        renderTable(filteredData);
+    </script>
+</body>
+</html>
