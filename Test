@@ -1,0 +1,19 @@
+function shiftMapLeftAfterSetView(map, lat, lon) {
+    // Center the map on the specified point with zoom level 13
+    map.setView([lat, lon], 13);
+
+    // Get the current map center as a LatLng object
+    let latLng = L.latLng(lat, lon);
+
+    // Convert LatLng to a container point (pixel position)
+    let containerPoint = map.latLngToContainerPoint(latLng);
+
+    // Shift the container point 50px to the left
+    containerPoint.x -= 50;
+
+    // Convert the adjusted container point back to LatLng
+    let newLatLng = map.containerPointToLatLng(containerPoint);
+
+    // Set the map view to the new LatLng
+    map.panTo(newLatLng);
+}
